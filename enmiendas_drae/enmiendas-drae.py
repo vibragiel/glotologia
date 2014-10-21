@@ -17,9 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import OrderedDict
 from lxml import html
-from urllib2 import urlopen, Request, quote
+from urllib2 import quote
 import argparse
 import json
 import locale
@@ -33,7 +32,8 @@ _USERAGENT = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.0.5)' \
 headers = {'User-Agent': _USERAGENT}
 challenge = [
     ('TS014dfc77_id', 3),
-    ('TS014dfc77_cr', '1a285e2c3a9cd4734a6c9e597c92c6f5:jihl:c55Mjc2J:1073656524'),
+    ('TS014dfc77_cr',
+     '1a285e2c3a9cd4734a6c9e597c92c6f5:jihl:c55Mjc2J:1073656524'),
     ('TS014dfc77_76', 0),
     ('TS014dfc77_md', 1),
     ('TS014dfc77_rf', 0),
@@ -73,7 +73,8 @@ def get_amended_lemmas():
             if not emn:
                 break
             for a in emn:
-                lema_url = BASE_URL + a.attrib['href'].replace("/enmDRAE/", "/drae/")
+                lema_url = BASE_URL + a.attrib['href'].replace("/enmDRAE/",
+                                                               "/drae/")
                 g = requests.post(lema_url, data=challenge, headers=headers)
                 l_root = html.fromstring(g.content.decode('utf8'))
                 enm_link = l_root.\
@@ -83,7 +84,8 @@ def get_amended_lemmas():
                 if enm_link:
                     lema_url = "%s/drae/srv/%s" % \
                         (BASE_URL, enm_link[0].attrib['href'])
-                    g = requests.post(lema_url, data=challenge, headers=headers)
+                    g = requests.post(lema_url, data=challenge,
+                                      headers=headers)
                     l_root = html.fromstring(g.content.decode('utf8'))
 
                 l_lemmas = []
