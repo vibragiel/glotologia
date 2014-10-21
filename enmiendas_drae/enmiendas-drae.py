@@ -17,19 +17,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import OrderedDict
 from lxml import html
 from urllib2 import urlopen, Request, quote
 import argparse
 import json
 import locale
 import re
+import requests
 import sys
 
 
 _USERAGENT = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.0.5)' \
              ' Gecko/2008121622 Ubuntu/8.04 (hardy) Firefox/3.0.5'
 headers = {'User-Agent': _USERAGENT}
-
+challenge = [
+    ('TS014dfc77_id', 3),
+    ('TS014dfc77_cr', '1a285e2c3a9cd4734a6c9e597c92c6f5:jihl:c55Mjc2J:1073656524'),
+    ('TS014dfc77_76', 0),
+    ('TS014dfc77_md', 1),
+    ('TS014dfc77_rf', 0),
+    ('TS014dfc77_ct', 0),
+    ('TS014dfc77_pd', 0)
+]
 
 BASE_URL = 'http://lema.rae.es'
 URL = BASE_URL + '/enmDRAE/cgi-bin/enmDRAE.cgi?%(letter)s=%(letter)s&' \
@@ -57,16 +67,15 @@ def get_amended_lemmas():
                 'ne': 1}
         while True:
             url = URL % upar
-            s = urlopen(Request(url, headers=headers)).read()
-            root = html.fromstring(s)
+            response = requests.post(url, data=challenge, headers=headers)
+            root = html.fromstring(response.content)
             emn = root.xpath("//div[@id='amend']//td[@class='am']/a")
             if not emn:
                 break
             for a in emn:
-                lema_url = BASE_URL + a.attrib['href']
-                g = urlopen(Request(lema_url, headers=headers)).read().\
-                    decode("utf8")
-                l_root = html.fromstring(g)
+                lema_url = BASE_URL + a.attrib['href'].replace("/enmDRAE/", "/drae/")
+                g = requests.post(lema_url, data=challenge, headers=headers)
+                l_root = html.fromstring(g.content.decode('utf8'))
                 enm_link = l_root.\
                     xpath("//a/img[contains(@alt, 'enmendado')]/..")
                 # if "Artículo enmendado" button is present, download the
@@ -74,9 +83,8 @@ def get_amended_lemmas():
                 if enm_link:
                     lema_url = "%s/drae/srv/%s" % \
                         (BASE_URL, enm_link[0].attrib['href'])
-                    g = urlopen(Request(lema_url, headers=headers)).read().\
-                        decode("utf8")
-                    l_root = html.fromstring(g)
+                    g = requests.post(lema_url, data=challenge, headers=headers)
+                    l_root = html.fromstring(g.content.decode('utf8'))
 
                 l_lemmas = []
                 # get all lemmas in the article, in case the definitions were
